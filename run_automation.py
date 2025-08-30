@@ -371,11 +371,8 @@ def connect_supabase():
         from supabase import create_client, Client
         
         # Supabase bağlantı bilgileri
-        SUPABASE_URL = "https://zmvsatlvobhdaxxgtoap.supabase.co"
-        SUPABASE_KEY = (
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-            "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptdnNhdGx2b2JoZGF4eGd0b2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNzIxMzksImV4cCI6MjA1NTc0ODEzOX0."
-            "lJLudSfixMbEOkJmfv22MsRLofP7ZjFkbGj26xF3dts"
+        SUPABASE_URL = os.environ.get("SUPABASE_URL")
+        SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
         )
         
         # Supabase istemcisini oluştur
@@ -992,8 +989,8 @@ import re
 import pandas as pd
 
 # ─────────── GİRİŞ BİLGİLERİ ───────────
-USER   = "mustafa_kod@haydigiy.com"
-PASSWD = "123456"
+USER   = os.environ.get("HAYDIGIY_USER")
+PASSWD = os.environ.get("HAYDIGIY_PASS")
 # ────────────────────────────────────────
 
 # ─────────── URL'LER ───────────
@@ -1793,6 +1790,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
