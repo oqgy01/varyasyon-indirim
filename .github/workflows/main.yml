@@ -1,1 +1,35 @@
+name: Python Varyasyon Otomasyonu
 
+on:
+  workflow_dispatch: # Manuel olarak çalıştırabilmek için
+  schedule:
+    - cron: '0 3 * * *' # Her gün sabaha karşı 06:00'da (Türkiye saatiyle) otomatik çalışır
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Depoyu Kopyala
+      uses: actions/checkout@v3
+
+    - name: Python Kurulumu
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Gerekli Kütüphaneleri Yükle
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Chrome ve ChromeDriver Kurulumu
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Otomasyon Betiğini Çalıştır
+      run: python run_automation.py # Python dosyanızın adını buraya yazın
+      env:
+        HAYDIGIY_USER: ${{ secrets.HAYDIGIY_USER }}
+        HAYDIGIY_PASS: ${{ secrets.HAYDIGIY_PASS }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
