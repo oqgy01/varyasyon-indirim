@@ -373,7 +373,7 @@ def connect_supabase():
         # Supabase bağlantı bilgileri
         SUPABASE_URL = os.environ.get("SUPABASE_URL")
         SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-        )
+        
         
         # Supabase istemcisini oluştur
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -1790,6 +1790,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
