@@ -2,8 +2,6 @@ name: Python Varyasyon Otomasyonu
 
 on:
   workflow_dispatch: # Manuel olarak çalıştırabilmek için
-  schedule:
-    - cron: '0 3 * * *' # Her gün sabaha karşı 06:00'da (Türkiye saatiyle) otomatik çalışır
 
 jobs:
   build:
