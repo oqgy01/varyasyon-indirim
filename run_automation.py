@@ -1382,34 +1382,81 @@ def update_combination_prices_from_excel(drv):
                 rows = drv.find_elements(By.XPATH, "//tbody[@role='rowgroup']//tr")
                 print(f"Toplam {len(rows)} satır bulundu.")
                 
-                # "Beden: S" veya "Beden: 36" olan satırı bul
+                # "Beden: S" veya "Beden: 36" olan satırı bul - maksimum 4 deneme ile sayfa yenileme
                 target_row = None
-                for row in rows:
-                    try:
-                        # Kombinasyon hücresini bul (2. sütun - Kombinasyon)
-                        combination_cell = row.find_elements(By.TAG_NAME, "td")[1]  # 0-based index
-                        combination_text = combination_cell.text.strip()
+                max_retries = 4
+                
+                for retry_attempt in range(max_retries):
+                    print(f"Beden arama denemesi {retry_attempt + 1}/{max_retries}")
+                    
+                    # Mevcut satırları tekrar al
+                    rows = drv.find_elements(By.XPATH, "//tbody[@role='rowgroup']//tr")
+                    print(f"Toplam {len(rows)} satır bulundu.")
+                    
+                    # Hedef bedeni ara
+                    for row in rows:
+                        try:
+                            # Kombinasyon hücresini bul (2. sütun - Kombinasyon)
+                            combination_cell = row.find_elements(By.TAG_NAME, "td")[1]  # 0-based index
+                            combination_text = combination_cell.text.strip()
+                            
+                            print(f"Kombinasyon kontrol ediliyor: '{combination_text}'")
+                            
+                            if combination_text in ["Beden: S", "Beden: 36"]:
+                                target_row = row
+                                print(f"Hedef kombinasyon bulundu: {combination_text}")
+                                break
+                        except Exception as e:
+                            print(f"Satır kontrol edilirken hata: {e}")
+                            continue
+                    
+                    # Hedef beden bulunduysa döngüden çık
+                    if target_row:
+                        break
+                    
+                    # Hedef beden bulunamadıysa ve son deneme değilse sayfayı yenile
+                    if retry_attempt < max_retries - 1:
+                        print(f"'Beden: S' veya 'Beden: 36' bulunamadı. Sayfa yenileniyor... (Deneme {retry_attempt + 1})")
                         
-                        print(f"Kombinasyon kontrol ediliyor: '{combination_text}'")
+                        # Sayfayı yenile
+                        drv.refresh()
                         
-                        if combination_text in ["Beden: S", "Beden: 36"]:
-                            target_row = row
-                            print(f"Hedef kombinasyon bulundu: {combination_text}")
-                            break
-                    except Exception as e:
-                        print(f"Satır kontrol edilirken hata: {e}")
-                        continue
+                        # Sayfa yüklenmesini bekle
+                        WebDriverWait(drv, 15).until(
+                            EC.presence_of_element_located((By.TAG_NAME, "body"))
+                        )
+                        
+                        # Ürün Varyasyonları sekmesine tekrar tıkla
+                        try:
+                            variations_tab = WebDriverWait(drv, 10).until(
+                                EC.element_to_be_clickable((By.XPATH, "//li[@data-tab-name='tab-product-attributes']"))
+                            )
+                            variations_tab.click()
+                            print("Ürün Varyasyonları sekmesi tekrar tıklandı.")
+                            
+                            # Kombinasyon tablosunu bekle
+                            WebDriverWait(drv, 20).until(
+                                EC.presence_of_element_located((By.XPATH, "//tbody[@role='rowgroup']//tr"))
+                            )
+                            print("Kombinasyon tablosu yeniden yüklendi.")
+                            
+                        except Exception as e:
+                            print(f"Sekme tıklama hatası: {e}")
+                            continue
+                    else:
+                        print("'Beden: S' veya 'Beden: 36' olan kombinasyon bulunamadı.")
+                        # Debug için tüm satırları yazdır
+                        print("Mevcut kombinasyonlar:")
+                        for i, row in enumerate(rows):
+                            try:
+                                combination_cell = row.find_elements(By.TAG_NAME, "td")[1]
+                                print(f"Satır {i+1}: {combination_cell.text.strip()}")
+                            except:
+                                pass
+                        break
                 
                 if not target_row:
-                    print("'Beden: S' veya 'Beden: 36' olan kombinasyon bulunamadı.")
-                    # Debug için tüm satırları yazdır
-                    print("Mevcut kombinasyonlar:")
-                    for i, row in enumerate(rows):
-                        try:
-                            combination_cell = row.find_elements(By.TAG_NAME, "td")[1]
-                            print(f"Satır {i+1}: {combination_cell.text.strip()}")
-                        except:
-                            pass
+                    print("Maksimum deneme sayısına ulaşıldı. Bu ürün atlanıyor.")
                     continue
                 
                 # Düzenle butonunu bul ve tıkla
@@ -1790,7 +1837,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
