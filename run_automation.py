@@ -4,6 +4,15 @@ import pandas as pd
 import time
 from typing import List, Dict, Any
 import os
+import re
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.keys import Keys
 
 
 def get_xml_data(url: str, max_retries: int = 10) -> str:
@@ -632,7 +641,8 @@ def calculate_varyant_fiyati(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
 
-def main():
+def process_xml_data():
+    """XML verilerini işler ve Excel dosyasına kaydeder."""
     # İşlenecek linkler
     urls = [
         "https://www.siparis.haydigiy.com/FaprikaXml/2XO5DS/1/",
@@ -673,14 +683,10 @@ def main():
         excel_filename = "urun_verileri.xlsx"
         df.to_excel(excel_filename, index=False, engine='openpyxl')
         print(f"\nVeriler başarıyla '{excel_filename}' dosyasına kaydedildi!")
-        
-
-        
+        return True
     else:
         print("Hiç ürün verisi bulunamadı!")
-
-if __name__ == "__main__":
-    main()
+        return False
 
 
 
@@ -704,12 +710,7 @@ if __name__ == "__main__":
 
 
 
-# İKİNCİ KISIM
-
-import requests
-import pandas as pd
-import time
-from typing import Dict, Any
+# Excel işleme fonksiyonları
 
 def download_excel_file(url: str, max_retries: int = 10) -> bytes:
     """
@@ -899,7 +900,8 @@ def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
         print(f"Tekrarlanan satır kaldırma hatası: {str(e)}")
         return df
 
-def main():
+def process_excel_data_from_url():
+    """Excel dosyasını indirir ve işler."""
     # İndirilecek Excel dosyası URL'i
     url = "https://www.siparis.haydigiy.com/FaprikaOrderXls/T6PPZN/1/"
     
@@ -917,7 +919,7 @@ def main():
         
         if df.empty:
             print("Excel verisi işlenemedi!")
-            return
+            return False
         
         # 3. EtoplaAdet kolonunu ekle
         print("\n3. EtoplaAdet kolonu ekleniyor...")
@@ -944,15 +946,12 @@ def main():
         output_filename = "islenmis_veriler.xlsx"
         df.to_excel(output_filename, index=False, engine='openpyxl')
         
-        # 9. Excel dosyalarını birleştir
-        print("\n9. Excel dosyaları birleştiriliyor...")
-        merge_excel_data()
+        print(f"Excel verileri başarıyla '{output_filename}' dosyasına kaydedildi!")
+        return True
         
     except Exception as e:
-        print(f"\n❌ Program hatası: {str(e)}")
-
-if __name__ == "__main__":
-    main()
+        print(f"\n❌ Excel işleme hatası: {str(e)}")
+        return False
 
 
 
@@ -971,22 +970,7 @@ if __name__ == "__main__":
 
 
 
-# SELENİUM İŞLEMLER
-
-
-import requests
-import time
-import xml.etree.ElementTree as ET
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.common.keys import Keys
-import re
-import pandas as pd
+# Selenium otomasyon fonksiyonları
 
 # ─────────── GİRİŞ BİLGİLERİ ───────────
 USER   = os.environ.get("HAYDIGIY_USER")
@@ -1771,27 +1755,27 @@ def process_product(drv, product_id):
         print(f"Ürün {product_id} işlenirken hata: {e}")
         return False
 
-def main():
-    """Ana fonksiyon."""
-    print("XML Otomasyon Programı Başlatılıyor...")
+def process_selenium_automation():
+    """Selenium otomasyon işlemlerini gerçekleştirir."""
+    print("Selenium Otomasyon Programı Başlatılıyor...")
     
     # XML'den ürün ID'lerini al
     product_ids = get_xml_data()
     if not product_ids:
         print("Ürün ID'leri alınamadı. Program sonlandırılıyor.")
-        return
+        return False
     
     # WebDriver'ı başlat
     driver = init_driver()
     if not driver:
         print("WebDriver başlatılamadı. Program sonlandırılıyor.")
-        return
+        return False
     
     try:
         # Sisteme giriş yap
         if not login(driver):
             print("Giriş yapılamadı. Program sonlandırılıyor.")
-            return
+            return False
         
         # Her ürünü işle
         successful_count = 0
@@ -1820,26 +1804,75 @@ def main():
             print("\nExcel'den kombinasyon fiyatları güncelleniyor...")
             if update_combination_prices_from_excel(driver):
                 print("Tüm işlemler başarıyla tamamlandı!")
+                return True
             else:
                 print("Excel güncelleme işlemlerinde hata oluştu!")
+                return False
         else:
             print("Bulk edit işlemlerinde hata oluştu!")
+            return False
         
     except KeyboardInterrupt:
         print("\nProgram kullanıcı tarafından durduruldu.")
+        return False
     except Exception as e:
         print(f"Beklenmeyen hata: {e}")
+        return False
     finally:
         # Tarayıcıyı kapat
         print("Tarayıcı kapatılıyor...")
         driver.quit()
         print("Program sonlandırıldı.")
 
+
+def main():
+    """Ana fonksiyon - tüm işlemleri sırayla çalıştırır."""
+    print("=" * 80)
+    print("HAYDIGIY OTOMASYON PROGRAMI BAŞLATILIYOR")
+    print("=" * 80)
+    
+    try:
+        # 1. ADIM: XML verilerini işle
+        print("\n🔸 ADIM 1: XML VERİLERİ İŞLENİYOR")
+        print("-" * 50)
+        if not process_xml_data():
+            print("❌ XML işleme başarısız! Program sonlandırılıyor.")
+            return
+        
+        # 2. ADIM: Excel verilerini işle
+        print("\n🔸 ADIM 2: EXCEL VERİLERİ İŞLENİYOR")
+        print("-" * 50)
+        if not process_excel_data_from_url():
+            print("❌ Excel işleme başarısız! Program sonlandırılıyor.")
+            return
+        
+        # 3. ADIM: Excel dosyalarını birleştir
+        print("\n🔸 ADIM 3: EXCEL DOSYALARI BİRLEŞTİRİLİYOR")
+        print("-" * 50)
+        if not merge_excel_data():
+            print("❌ Excel birleştirme başarısız! Program sonlandırılıyor.")
+            return
+        
+        # 4. ADIM: Selenium otomasyonu
+        print("\n🔸 ADIM 4: SELENİUM OTOMASYONU BAŞLATILIYOR")
+        print("-" * 50)
+        if not process_selenium_automation():
+            print("❌ Selenium otomasyonu başarısız!")
+            return
+        
+        print("\n" + "=" * 80)
+        print("✅ TÜM İŞLEMLER BAŞARIYLA TAMAMLANDI!")
+        print("=" * 80)
+        
+    except KeyboardInterrupt:
+        print("\n⚠️ Program kullanıcı tarafından durduruldu.")
+    except Exception as e:
+        print(f"\n❌ Beklenmeyen hata: {e}")
+        import traceback
+        traceback.print_exc()
+
 if __name__ == "__main__":
     main()
-
-
-
 
 
 
