@@ -984,7 +984,7 @@ BULKEDIT_URL = f"{BASE_URL}/admin/product/bulkedit/"
 XML_URL = "https://www.siparis.haydigiy.com/FaprikaXml/NE6ZAB/1/"
 # ───────────────────────────────
 
-def get_xml_data():
+def get_xml_product_ids():
     """XML verisini alır ve ürün ID'lerini döndürür."""
     max_retries = 10
     retry_count = 0
@@ -1760,7 +1760,7 @@ def process_selenium_automation():
     print("Selenium Otomasyon Programı Başlatılıyor...")
     
     # XML'den ürün ID'lerini al
-    product_ids = get_xml_data()
+    product_ids = get_xml_product_ids()
     if not product_ids:
         print("Ürün ID'leri alınamadı. Program sonlandırılıyor.")
         return False
