@@ -5,6 +5,7 @@ import time
 from typing import List, Dict, Any
 import os
 import re
+from io import BytesIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -722,8 +723,24 @@ def download_excel_file(url: str, max_retries: int = 10) -> bytes:
             print(f"Excel dosyası indiriliyor: {url} (Deneme {attempt + 1})")
             response = requests.get(url, timeout=9999)
             response.raise_for_status()
-            print(f"Excel dosyası başarıyla indirildi!")
-            return response.content
+            
+            # İndirilen içeriği kontrol et
+            content = response.content
+            print(f"İndirilen dosya boyutu: {len(content)} bytes")
+            
+            # Excel dosyası olup olmadığını kontrol et (ZIP dosyası başlangıcı)
+            if content.startswith(b'PK'):
+                print(f"Excel dosyası başarıyla indirildi! (ZIP formatı doğrulandı)")
+                return content
+            else:
+                print(f"İndirilen dosya Excel formatında değil. İçerik başlangıcı: {content[:50]}")
+                if attempt < max_retries - 1:
+                    print("5 saniye bekleniyor...")
+                    time.sleep(5)
+                    continue
+                else:
+                    raise Exception("İndirilen dosya geçerli bir Excel dosyası değil")
+                    
         except Exception as e:
             print(f"Hata (Deneme {attempt + 1}): {url} - {str(e)}")
             if attempt < max_retries - 1:
@@ -738,9 +755,12 @@ def process_excel_data(excel_content: bytes) -> pd.DataFrame:
     Excel içeriğini işler ve gerekli kolonları filtreler.
     """
     try:
-        # Excel dosyasını oku
-        df = pd.read_excel(excel_content, engine='openpyxl')
+        # BytesIO ile Excel dosyasını oku
+        df = pd.read_excel(BytesIO(excel_content), engine='openpyxl')
         print(f"Excel dosyası okundu. Toplam {len(df)} satır ve {len(df.columns)} kolon bulundu.")
+        
+        # Mevcut kolonları göster
+        print(f"Mevcut kolonlar: {list(df.columns)}")
         
         # Sadece gerekli kolonları tut
         required_columns = ['StokKodu', 'Adet', 'Varyant']
@@ -749,6 +769,14 @@ def process_excel_data(excel_content: bytes) -> pd.DataFrame:
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             print(f"Uyarı: Eksik kolonlar: {missing_columns}")
+            print("Mevcut kolonlardan benzer olanları arayalım...")
+            
+            # Benzer kolon isimlerini ara
+            for missing_col in missing_columns:
+                similar_cols = [col for col in df.columns if missing_col.lower() in col.lower() or col.lower() in missing_col.lower()]
+                if similar_cols:
+                    print(f"'{missing_col}' için benzer kolonlar: {similar_cols}")
+            
             return pd.DataFrame()
         
         # Sadece gerekli kolonları seç
@@ -759,6 +787,7 @@ def process_excel_data(excel_content: bytes) -> pd.DataFrame:
         
     except Exception as e:
         print(f"Excel işleme hatası: {str(e)}")
+        print(f"Hata detayı: {type(e).__name__}")
         return pd.DataFrame()
 
 def add_etopla_adet_column(df: pd.DataFrame) -> pd.DataFrame:
