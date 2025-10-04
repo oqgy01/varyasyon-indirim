@@ -610,10 +610,10 @@ def calculate_varyant_fiyati(df: pd.DataFrame) -> pd.DataFrame:
                 # SismeOrani'na göre indirim uygula
                 if 40 <= sisme_orani <= 70:
                     # %15 indirim
-                    indirimli_fiyat = fiyat * 0.85
+                    indirimli_fiyat = fiyat * 0.75
                 elif sisme_orani > 70:
                     # %20 indirim
-                    indirimli_fiyat = fiyat * 0.80
+                    indirimli_fiyat = fiyat * 0.70
                 else:
                     # İndirim yok
                     indirimli_fiyat = fiyat
@@ -1902,6 +1902,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
